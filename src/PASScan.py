@@ -11,6 +11,7 @@ from __future__ import print_function
 import sys
 import os
 from datetime import datetime
+import time
 
 # Import third-party modules
 import click
@@ -25,6 +26,28 @@ def now_time(comment):
 def get_absolute_path(filename):
     '''Get absolute path of a file'''
     return os.path.abspath(os.path.expanduser(filename))
+
+def time_checker(end_time):
+    end_h = int(end_time/3600)
+    end_time -= 3600 * end_h
+    if end_h < 10:
+        end_h = "0" + str(end_h)
+    else:
+        end_h = str(end_h)
+
+    end_m = int(end_time/60)
+    end_time -= 60 * end_m
+    if end_m < 10:
+        end_m = "0" + str(end_m)
+    else:
+        end_m = str(end_m)
+
+    end_s = int(end_time)
+    if end_s < 10:
+        end_s = "0" + str(end_s)
+    else:
+        end_s = str(end_s)
+    return [end_h, end_m, end_s]
 
 # Callback functions for value validation
 def validate_ifastq(ctx, param, value):
@@ -89,8 +112,9 @@ def cmd():
 @click.option('-nd', '--nucleotide-trimming-direction', 'nucleotide_trimming_direction', type=click.Choice(['three', 'five']), default='three', help='Trimmed nucleotide direction. Default: three')
 @click.option('-m', '--minimum-length', 'minimum_length', type=int, default=18, help='Discard trimmed reads that are shorter than LENGTH. Default: 18')
 @click.option('-bl', '--barcode-seq-length', 'barcode_seq_length', type=int, default=None, help='Length of barcode sequence. Trim the Barcode sequence from reads. Default: None')
-@click.option('-bd', '--barcode_direction', 'barcode_direction', type=click.Choice(['three', 'five']), default='three', help='Trimmed nucleotide direction. Default: three')
+@click.option('-bd', '--barcode_direction', 'barcode_direction', type=click.Choice(['three', 'five']), default='five', help='Trimmed nucleotide direction. Default: five')
 def trim_polya(ifastq, output, log, nucleotide_trimming_list, nucleotide_trimming_direction, minimum_length, barcode_seq_length, barcode_direction):
+    start_time = time.time()
     now_time("Beginning PASScan run (v0.1.0)")
     print("-"*50)
     now_time('Start trimming polyA sequence from reads...')
@@ -112,6 +136,12 @@ def trim_polya(ifastq, output, log, nucleotide_trimming_list, nucleotide_trimmin
     trim_polya_run(fastq_file, nucleotide_trimming_list, nucleotide_trimming_direction,
                    minimum_length, output_file, log_file,
                    barcode_seq_length, barcode_direction)
+
+    # logging
+    #Elapsed time
+    end_time = time.time() - start_time
+    finish_time_list = time_checker(end_time)
+    now_time("PASScan - trim_polya was successfully finished: {0}:{1}:{2} elapsed".format(finish_time_list[0], finish_time_list[1], finish_time_list[2]))
 
 @cmd.command()
 def get_pass_read():
