@@ -16,6 +16,7 @@ import time
 # Import third-party modules
 import click
 from module.trim_polyA import trim_polya_run
+from module.get_pass_reads import get_pass_read_run
 
 # Print out comment with now time
 def now_time(comment):
@@ -52,15 +53,28 @@ def time_checker(end_time):
 # Callback functions for value validation
 def validate_ifastq(ctx, param, value):
     if not value:
-        click.echo('Error: Do not choose your FASTQ file.\n')
+        click.echo('Error: FASTQ file is not chosen.\n')
         click.echo(ctx.get_help())
         ctx.exit()
     # Check isfile
     if not os.path.isfile(value):
-        click.echo('Error: Fastq file does not exist.\n')
+        click.echo('Error: FASTQ file does not exist.\n')
         click.echo(ctx.get_help())
         ctx.exit()
     return(value)
+
+def validate_ibam(ctx, param, value):
+    if not value:
+        click.echo('Error: BAM file is not chosen.\n')
+        click.echo(ctx.get_help())
+        ctx.exit()
+    # Check isfile
+    if not os.path.isfile(value):
+        click.echo('Error: BAM file does not exist.\n')
+        click.echo(ctx.get_help())
+        ctx.exit()
+    return(value)
+
 
 def validate_output(ctx, param, value):
     if not value:
@@ -112,7 +126,7 @@ def cmd():
 @click.option('-nd', '--nucleotide-trimming-direction', 'nucleotide_trimming_direction', type=click.Choice(['three', 'five']), default='three', help='Trimmed nucleotide direction. Default: three')
 @click.option('-m', '--minimum-length', 'minimum_length', type=int, default=18, help='Discard trimmed reads that are shorter than LENGTH. Default: 18')
 @click.option('-bl', '--barcode-seq-length', 'barcode_seq_length', type=int, default=None, help='Length of barcode sequence. Trim the Barcode sequence from reads. Default: None')
-@click.option('-bd', '--barcode_direction', 'barcode_direction', type=click.Choice(['three', 'five']), default='five', help='Trimmed nucleotide direction. Default: five')
+@click.option('-bd', '--barcode-direction', 'barcode_direction', type=click.Choice(['three', 'five']), default='five', help='Trimmed nucleotide direction. Default: five')
 def trim_polya(ifastq, output, log, nucleotide_trimming_list, nucleotide_trimming_direction, minimum_length, barcode_seq_length, barcode_direction):
     start_time = time.time()
     now_time("Beginning PASScan run (v0.1.0)")
@@ -137,15 +151,35 @@ def trim_polya(ifastq, output, log, nucleotide_trimming_list, nucleotide_trimmin
                    minimum_length, output_file, log_file,
                    barcode_seq_length, barcode_direction)
 
-    # logging
-    #Elapsed time
+    # logging - Elapsed time
     end_time = time.time() - start_time
     finish_time_list = time_checker(end_time)
     now_time("PASScan - trim_polya was successfully finished: {0}:{1}:{2} elapsed".format(finish_time_list[0], finish_time_list[1], finish_time_list[2]))
 
 @cmd.command()
-def get_pass_read():
-    click.echo('Start getting polyA site-supporting reads...')
+@click.option('-i', '--ibam', 'ibam', callback=validate_ibam, help='Input file in BAM file. [required]')
+@click.option('-o', '--output-prefix', 'output', callback=validate_output, help='Prefix of output file. [required]')
+@click.option('-m', '--minimum-polya-length', 'minimum_polya', type=int, default=6, help='Discard polyA site-supporting reads that are shorter than polyA LENGTH [INT]. Default: 6')
+@click.option('-d', '--polya-direction', 'polya_direction', type=click.Choice(['three', 'five']), default='three', help='PolyA direction on reads. Default: three')
+def get_pass_read(ibam, output, minimum_polya, polya_direction):
+    start_time = time.time()
+    now_time("Beginning PASScan run (v0.1.0)")
+    print("-"*50)
+    now_time('Start extracting a poly(A) site-supporting (PASS) reads from BAM file...')
+    click.echo("  Input BAM file: {0}".format(ibam))
+    click.echo("  Output prefix: {0}".format(output))
+    click.echo("  Minimum polyA length: {0}".format(minimum_polya))
+    click.echo("  PolyA Direction on reads: {0}".format(polya_direction))
+
+    # Extracting PASS reads from BAM file
+    output_file = open(output, 'w')
+    get_pass_read_run(ibam, output_file, minimum_polya, polya_direction)
+
+    # logging - Elapsed time
+    end_time = time.time() - start_time
+    finish_time_list = time_checker(end_time)
+    now_time("PASScan - get_pass_read was successfully finished: {0}:{1}:{2} elapsed".format(finish_time_list[0], finish_time_list[1], finish_time_list[2]))
+
 
 def main():
     cmd()
