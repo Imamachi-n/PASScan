@@ -75,6 +75,17 @@ def validate_ibam(ctx, param, value):
         ctx.exit()
     return(value)
 
+def validate_gfasta(ctx, param, value):
+    if not value:
+        click.echo('Error: Reference FASTA file is not chosen.\n')
+        click.echo(ctx.get_help())
+        ctx.exit()
+    # Check isfile
+    if not os.path.isfile(value):
+        click.echo('Error: Reference FASTA file does not exist.\n')
+        click.echo(ctx.get_help())
+        ctx.exit()
+    return(value)
 
 def validate_output(ctx, param, value):
     if not value:
@@ -158,22 +169,30 @@ def trim_polya(ifastq, output, log, nucleotide_trimming_list, nucleotide_trimmin
 
 @cmd.command()
 @click.option('-i', '--ibam', 'ibam', callback=validate_ibam, help='Input file in BAM file. [required]')
+@click.option('-g', '--reference-genome-fasta', 'gfasta', callback=validate_gfasta, help='Input file in Reference FASTA file. [required]')
 @click.option('-o', '--output-prefix', 'output', callback=validate_output, help='Prefix of output file. [required]')
+@click.option('-l', '--log-prefix', 'log', callback=validate_log, help='Prefix of log file. Default: None')
 @click.option('-m', '--minimum-polya-length', 'minimum_polya', type=int, default=6, help='Discard polyA site-supporting reads that are shorter than polyA LENGTH [INT]. Default: 6')
 @click.option('-d', '--polya-direction', 'polya_direction', type=click.Choice(['three', 'five']), default='three', help='PolyA direction on reads. Default: three')
-def get_pass_read(ibam, output, minimum_polya, polya_direction):
+def get_pass_read(ibam, gfasta, output, log, minimum_polya, polya_direction):
     start_time = time.time()
     now_time("Beginning PASScan run (v0.1.0)")
     print("-"*50)
     now_time('Start extracting a poly(A) site-supporting (PASS) reads from BAM file...')
     click.echo("  Input BAM file: {0}".format(ibam))
+    click.echo("  Reference FASTA file: {0}".format(gfasta))
     click.echo("  Output prefix: {0}".format(output))
+    if not log:
+        log = "{0}.log".format(log)
+    click.echo("  Log prefix: {0}".format(log))
     click.echo("  Minimum polyA length: {0}".format(minimum_polya))
     click.echo("  PolyA Direction on reads: {0}".format(polya_direction))
 
     # Extracting PASS reads from BAM file
     output_file = open(output, 'w')
-    get_pass_read_run(ibam, output_file, minimum_polya, polya_direction)
+    internal_polyA_file = open("{0}_internal_polyA.bed".format(os.path.splitext(output)[0]), 'w')
+    log_file = open(log, 'w')
+    get_pass_read_run(ibam, gfasta, output_file, log_file, internal_polyA_file, minimum_polya, polya_direction)
 
     # logging - Elapsed time
     end_time = time.time() - start_time
