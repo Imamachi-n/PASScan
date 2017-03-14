@@ -27,11 +27,11 @@ def internal_polyA_checker(seq, chrom, polya_st, polya_ed, name, strand):
             continue
         else:
             if strand == '+':
-                st_PASS_peak = int(polya_st) + polyA_count
-                ed_PASS_peak = int(polya_ed) + polyA_count
+                st_PASS_peak = int(polya_st) + polyA_count - 1
+                ed_PASS_peak = int(polya_ed) + polyA_count - 1
             elif strand == '-':
-                st_PASS_peak = int(polya_st) - polyA_count
-                ed_PASS_peak = int(polya_ed) - polyA_count
+                st_PASS_peak = int(polya_st) - polyA_count + 1
+                ed_PASS_peak = int(polya_ed) - polyA_count + 1
             name = "{0}_NON-{1}A".format(name, str(polyA_count))
 
             # whether to pass >=2 nongenomic As
@@ -63,7 +63,7 @@ def get_pass_read_run(ibam, gfasta, output_file, log_file, internal_polyA_file, 
     for line in bam_file:
         chrom = bam_file.get_reference_name(line.reference_id)
         ed = int(line.reference_end)
-        # Convert pysam.calignedsegment.AlignedSegment object -> string oject
+        # Convert pysam.calignedsegment.AlignedSegment object -> string object
         line = str(line).rstrip()
         data = line.split("\t")
 
@@ -114,7 +114,10 @@ def get_pass_read_run(ibam, gfasta, output_file, log_file, internal_polyA_file, 
         name = data[0]
 
         # Get sequence
-        seq = genome_fasta_file.fetch(chrom, tail_st, tail_ed)
+        try:
+            seq = genome_fasta_file.fetch(chrom, tail_st, tail_ed)
+        except:
+            continue
         if strand == '-':
             seq = revcomp(seq, rev_table)
 
