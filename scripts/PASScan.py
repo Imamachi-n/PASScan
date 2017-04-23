@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/akimitsu/miniconda2/bin/python
 # -*- coding: utf-8 -*-
 #
 # PASScan: Determine polyA sites from 3'end sequence data.
@@ -15,8 +15,8 @@ import time
 
 # Import third-party modules
 import click
-from module.trim_polyA import trim_polya_run
-from module.get_pass_reads import get_pass_read_run
+from modules.trim_polyA import trim_polya_run
+from modules.get_pass_reads import get_pass_read_run
 
 # Print out comment with now time
 def now_time(comment):
@@ -183,8 +183,8 @@ def get_pass_read(ibam, gfasta, output, log, minimum_polya, polya_direction):
     click.echo("  Reference FASTA file: {0}".format(gfasta))
     click.echo("  Output prefix: {0}".format(output))
     if not log:
-        log = "{0}.log".format(log)
-    click.echo("  Log prefix: {0}".format(log))
+        log = "{0}.log".format(os.path.splitext(output)[0])
+    click.echo("  Log prefix: {0}".format(os.path.splitext(output)[0]))
     click.echo("  Minimum polyA length: {0}".format(minimum_polya))
     click.echo("  PolyA Direction on reads: {0}".format(polya_direction))
 
